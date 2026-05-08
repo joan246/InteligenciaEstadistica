@@ -33,12 +33,15 @@ def calcular_percentil(datos_ordenados, p):
         return datos_ordenados[idx_inf] * (1 - peso) + datos_ordenados[idx_sup] * peso
 
 # --- CONTEO ---
-def permutacion_sin_repeticion(n): return math.factorial(n)
-def permutacion_con_repeticion(n, r): return n ** r
-def combinacion_sin_repeticion(n, r): return math.comb(n, r) if r <= n else 0
-def combinacion_con_repeticion(n, r): return math.comb(n + r - 1, r)
-def variacion_sin_repeticion(n, r): return math.factorial(n) // math.factorial(n - r) if r <= n else 0
-def variacion_con_repeticion(n, r): return n ** r
+def permutacion_lineal_sin_rep(n): return math.factorial(n)
+def permutacion_con_rep_identicos(n, frecuencias):
+    denominador = 1
+    for f in frecuencias: denominador *= math.factorial(f)
+    return math.factorial(n) // denominador
+def variacion_sin_rep(n, r): return math.factorial(n) // math.factorial(n - r) if r <= n else 0
+def variacion_con_rep(n, r): return n ** r
+def combinacion_sin_rep(n, r): return math.comb(n, r) if r <= n else 0
+def combinacion_con_rep(n, r): return math.comb(n + r - 1, r)
 
 # --- DISTRIBUCIONES ---
 def funcion_error_aprox(x):
@@ -261,17 +264,54 @@ elif "1." in opcion:
 # 2. REGLAS DE CONTEO
 # =======================================================
 elif "2." in opcion:
-    render_section_header("Reglas de Conteo", "Cálculo de cardinalidad.", "🔢")
+    render_section_header("Reglas de Conteo", "Cálculo de cardinalidad y combinatoria.", "🔢")
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    mod = st.selectbox("Modelo:", ["Permutación P(n)", "PR(n,r)", "Combinación C(n,r)", "CR(n,r)", "Variación V(n,r)", "VR(n,r)"], key="c_mod")
-    n, r = st.number_input("n:", 1, value=10, key="c_n"), st.number_input("r:", 0, value=3, key="c_r")
-    if "P(n)" in mod: res = permutacion_sin_repeticion(n)
-    elif "PR" in mod or "VR" in mod: res = permutacion_con_repeticion(n, r)
-    elif "CR" in mod: res = combinacion_con_repeticion(n, r)
-    elif "C" in mod: res = combinacion_sin_repeticion(n, r)
-    else: res = variacion_sin_repeticion(n, r)
-    st.metric("Total", f"{res:,}")
-    if st.button("📝 Registrar"): registrar_calculo("Conteo", {"c_mod":mod,"c_n":n,"c_r":r})
+    
+    mod = st.selectbox("Modelo de Conteo:", [
+        "Permutación (Sin repetición)", 
+        "Permutación con repetición", 
+        "Combinación (Sin repetición)", 
+        "Combinación con repetición", 
+        "Variación (Sin repetición)", 
+        "Variación con repetición"
+    ], key="c_mod")
+
+    # Mostrar fórmula según selección
+    if "Permutación (Sin repetición)" in mod:
+        st.latex(r"P(n, r) = \frac{n!}{(n-r)!}")
+    elif "Permutación con repetición" in mod:
+        st.latex(r"P'_n(r) = n^r")
+    elif "Combinación (Sin repetición)" in mod:
+        st.latex(r"C_n^r = \binom{n}{r} = \frac{n!}{r!(n-r)!}")
+    elif "Combinación con repetición" in mod:
+        st.latex(r"CR_n^r = \binom{n+r-1}{r}")
+    elif "Variación (Sin repetición)" in mod:
+        st.latex(r"V_n^r = \frac{n!}{(n-r)!}")
+    elif "Variación con repetición" in mod:
+        st.latex(r"VR_n^r = n^r")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        n = st.number_input("n (Población total):", 1, value=10, key="c_n")
+    
+    with col2:
+        # Para casos "Sin repetición", r no puede ser mayor que n
+        max_r = n if ("(Sin repetición)" in mod) else None
+        r = st.number_input("r (Muestra / Selección):", 0, max_value=max_r, value=min(3, n), key="c_r")
+    
+    res = 0
+    if "Permutación (Sin repetición)" in mod: res = variacion_sin_rep(n, r)
+    elif "Permutación con repetición" in mod: res = variacion_con_rep(n, r)
+    elif "Combinación con repetición" in mod: res = combinacion_con_rep(n, r)
+    elif "Combinación (Sin repetición)" in mod: res = combinacion_sin_rep(n, r)
+    elif "Variación con repetición" in mod: res = variacion_con_rep(n, r)
+    else: res = variacion_sin_rep(n, r)
+
+    st.markdown("---")
+    st.metric("Resultado", f"{res:,}")
+    
+    if st.button("📝 Registrar"): 
+        registrar_calculo("Conteo", {"c_mod":mod,"c_n":n,"c_r":r})
     st.markdown('</div>', unsafe_allow_html=True)
 
 # =======================================================
@@ -297,18 +337,96 @@ elif "3." in opcion:
 # 4. VARIABLE ALEATORIA
 # =======================================================
 elif "4." in opcion:
-    render_section_header("Variable Aleatoria", "Momentos discretos.", "🎲")
-    nv = st.number_input("Valores:", 1, 5, 3, key="va_nv")
+    render_section_header("Variable Aleatoria", "Análisis detallado de momentos discretos.", "🎲")
+    
+    col_setup1, col_setup2 = st.columns([1, 2])
+    with col_setup1:
+        nv = st.number_input("Número de valores (n):", 1, 20, 3, key="va_nv")
+    
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    
     vx, vp = [], []
+    st.markdown("##### Ingrese la distribución de probabilidad:")
+    
+    # Grid para entrada de datos
     for i in range(nv):
         c1, c2 = st.columns(2)
-        vx.append(c1.number_input(f"x_{i+1}", value=float(i), key=f"va_x_{i}"))
-        vp.append(c2.number_input(f"P(x_{i+1})", 0.0, 1.0, 1.0/nv, key=f"va_p_{i}"))
-    if abs(sum(vp)-1.0) < 1e-4:
-        ex = sum(a*b for a,b in zip(vx,vp))
-        st.metric("E[X]", f"{ex:.4f}")
-        if st.button("📝 Registrar"): registrar_calculo("Var. Aleatoria", {"va_nv":nv, **{f"va_x_{i}":v for i,v in enumerate(vx)}, **{f"va_p_{i}":v for i,v in enumerate(vp)}})
+        vx.append(c1.number_input(f"Valor x_{i+1}", value=float(i), key=f"va_x_{i}"))
+        
+        # Sugerir probabilidad restante para el último valor
+        default_p = 0.0
+        if i == nv - 1:
+            suma_previa = sum(vp)
+            default_p = max(0.0, 1.0 - suma_previa)
+        else:
+            default_p = 1.0 / nv
+            
+        vp.append(c2.number_input(f"Probabilidad P(x_{i+1})", 0.0, 1.0, default_p, format="%.4f", key=f"va_p_{i}"))
+
+    suma_p = sum(vp)
+    if abs(suma_p - 1.0) > 1e-5:
+        st.warning(f"⚠ Las probabilidades suman {suma_p:.4f}. Deben sumar 1.0 para resultados exactos.")
+
+    # Cálculos por Valor (x)
+    ex = sum(x * p for x, p in zip(vx, vp))
+    ex2 = sum((x**2) * p for x, p in zip(vx, vp))
+    var_x = max(0.0, ex2 - ex**2)
+    sigma_x = math.sqrt(var_x)
+    
+    # Cálculos por Índice (i) - i empieza en 1
+    indices = list(range(1, nv + 1))
+    ei = sum(i * p for i, p in zip(indices, vp))
+    ei2 = sum((i**2) * p for i, p in zip(indices, vp))
+    var_i = max(0.0, ei2 - ei**2)
+    sigma_i = math.sqrt(var_i)
+    
+    # Crear DataFrame para la tabla
+    df_data = {
+        "i": indices,
+        "x": vx,
+        "P(x)": vp,
+        "x·P(x)": [x * p for x, p in zip(vx, vp)],
+        "i·P(x)": [i * p for i, p in zip(indices, vp)],
+        "x²·P(x)": [(x**2) * p for x, p in zip(vx, vp)],
+        "i²·P(x)": [(i**2) * p for i, p in zip(indices, vp)]
+    }
+    df = pd.DataFrame(df_data)
+    
+    st.markdown("### Tabla de Desglose")
+    st.dataframe(df.style.format({
+        "P(x)": "{:.4f}",
+        "x·P(x)": "{:.4f}",
+        "i·P(x)": "{:.4f}",
+        "x²·P(x)": "{:.4f}",
+        "i²·P(x)": "{:.4f}"
+    }), use_container_width=True)
+    
+    # Resultados Estilizados
+    st.markdown("---")
+    col_res1, col_res2 = st.columns(2)
+    
+    with col_res1:
+        st.markdown("#### 1. Análisis por Valores (x)")
+        st.metric("Esperanza E(X)", f"{ex:.6f}")
+        st.metric("Varianza Var(X)", f"{var_x:.6f}")
+        st.metric("Desv. Estándar σ", f"{sigma_x:.6f}")
+        st.caption(f"E(X²) = {ex2:.6f}")
+
+    with col_res2:
+        st.markdown("#### 2. Análisis por Índice (i)")
+        st.metric("Esperanza E(i)", f"{ei:.6f}")
+        st.metric("Varianza Var(i)", f"{var_i:.6f}")
+        st.metric("Desv. Estándar σ(i)", f"{sigma_i:.6f}")
+        st.caption(f"E(i²) = {ei2:.6f}")
+
+    if st.button("📝 Registrar en Historial"):
+        registrar_calculo("Var. Aleatoria", {
+            "va_nv": nv, 
+            **{f"va_x_{i}": v for i, v in enumerate(vx)}, 
+            **{f"va_p_{i}": v for i, v in enumerate(vp)}
+        })
+        st.success("Cálculo registrado correctamente.")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # =======================================================
