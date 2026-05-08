@@ -86,7 +86,7 @@ def registrar_calculo(modulo, inputs_dict):
 # CONFIGURACIÓN GENERAL & UI
 # ==========================
 st.set_page_config(
-    page_title="Statistical Solver Pro | Edición Premium", 
+    page_title="Sistema de Resolución Estadística (Académica)", 
     page_icon="🧬", 
     layout="wide", 
     initial_sidebar_state="expanded"
@@ -182,7 +182,7 @@ if "nav_index" not in st.session_state:
 # MENÚ LATERAL (SIDEBAR)
 # ==========================
 with st.sidebar:
-    st.markdown('<div style="text-align: center; padding-bottom: 20px;"><h3>🧠 INTELIGENCIA ESTADISTICA</h3></div>', unsafe_allow_html=True)
+    st.markdown('<div style="text-align: center; padding-bottom: 20px;"><h3>🧠 RESOLUCIÓN ESTADÍSTICA</h3></div>', unsafe_allow_html=True)
     st.markdown("---")
     opcion = st.radio("SISTEMA DE ANÁLISIS", OPCIONES_MENU, index=st.session_state["nav_index"])
 
@@ -190,7 +190,7 @@ with st.sidebar:
 # 🏠 PANEL DE CONTROL
 # =======================================================
 if "Panel" in opcion:
-    st.markdown('<h1 class="hero-title">Inteligencia Estadística</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">Sistema de Resolución Estadística</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color: #64748b; margin-bottom: 30px;">Plataforma de alta fidelidad para el análisis y modelado de datos académicos.</p>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
@@ -315,19 +315,129 @@ elif "4." in opcion:
 # 5. DISTRIBUCIONES
 # =======================================================
 elif "5." in opcion:
-    render_section_header("Distribuciones", "Densidad y masa.", "📈")
-    dt = st.selectbox("Modelo:", ["Normal", "Poisson", "Binomial", "Exponencial"], key="d_mod")
+    render_section_header("Distribuciones", "Densidad, masa e intervalos.", "📈")
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    
+    dt = st.selectbox("Modelo de Distribución:", ["Normal", "Binomial", "Poisson", "Exponencial"], key="d_mod")
+    tipo_calc = st.selectbox("Tipo de Probabilidad:", ["Puntual / Densidad", "Acumulada Inferior (P ≤ x)", "Acumulada Superior (P > x)", "Intervalo (P [a, b])"], key="d_tipo")
+    
+    res = 0.0
+    res_label = "Resultado"
+    inputs = {"d_mod": dt, "d_tipo": tipo_calc}
+    
+    # --- COLUMNAS DE PARÁMETROS ---
+    c1, c2 = st.columns(2)
+    
     if dt == "Normal":
-        m, s, x = st.number_input("μ:", value=0.0, key="d_norm_m"), st.number_input("σ:", 0.1, value=1.0, key="d_norm_s"), st.number_input("x:", value=0.0, key="d_norm_x")
-        res = cdf_normal_estandar((x-m)/s)
-        inputs = {"d_mod":dt, "d_norm_m":m, "d_norm_s":s, "d_norm_x":x}
+        mu = c1.number_input("Media (μ):", value=0.0, key="d_norm_m")
+        sigma = c2.number_input("Desv. Estándar (σ):", 0.001, value=1.0, key="d_norm_s")
+        if tipo_calc == "Intervalo (P [a, b])":
+            a = c1.number_input("Límite inferior (a):", value=-1.0, key="d_norm_a")
+            b = c2.number_input("Límite superior (b):", value=1.0, key="d_norm_b")
+            res = cdf_normal_estandar((b-mu)/sigma) - cdf_normal_estandar((a-mu)/sigma)
+            res_label = f"P({a} ≤ X ≤ {b})"
+        else:
+            x = st.number_input("Valor (x):", value=0.0, key="d_norm_x")
+            if "Puntual" in tipo_calc: 
+                res = pdf_normal(x, mu, sigma)
+                res_label = f"f({x}) [Densidad]"
+            elif "Inferior" in tipo_calc: 
+                res = cdf_normal_estandar((x-mu)/sigma)
+                res_label = f"P(X ≤ {x})"
+            else: 
+                res = 1 - cdf_normal_estandar((x-mu)/sigma)
+                res_label = f"P(X > {x})"
+        inputs.update({"mu": mu, "sigma": sigma})
+
     elif dt == "Binomial":
-        n, p, k = st.number_input("n:", 1, key="d_bin_n"), st.number_input("p:", 0.0, 1.0, 0.5, key="d_bin_p"), st.number_input("k:", 0, key="d_bin_k")
-        res = probabilidad_binomial(int(k), int(n), p)
-        inputs = {"d_mod":dt, "d_bin_n":n, "d_bin_p":p, "d_bin_k":k}
-    else: res = 0; inputs = {}
-    st.metric("P", f"{res:.4f}")
+        n = c1.number_input("Ensayos (n):", 1, value=10, key="d_bin_n")
+        p = c2.number_input("Prob. éxito (p):", 0.0, 1.0, 0.5, key="d_bin_p")
+        if tipo_calc == "Intervalo (P [a, b])":
+            a = c1.number_input("Mínimo éxitos (a):", 0, n, 0, key="d_bin_a")
+            b = c2.number_input("Máximo éxitos (b):", 0, n, n, key="d_bin_b")
+            res = sum(probabilidad_binomial(i, n, p) for i in range(int(a), int(b) + 1))
+            res_label = f"P({a} ≤ X ≤ {b})"
+        else:
+            k = st.number_input("Éxitos (k):", 0, n, 0, key="d_bin_k")
+            if "Puntual" in tipo_calc: 
+                res = probabilidad_binomial(int(k), n, p)
+                res_label = f"P(X = {k})"
+            elif "Inferior" in tipo_calc: 
+                res = sum(probabilidad_binomial(i, n, p) for i in range(int(k) + 1))
+                res_label = f"P(X ≤ {k})"
+            else: 
+                res = 1 - sum(probabilidad_binomial(i, n, p) for i in range(int(k) + 1))
+                res_label = f"P(X > {k})"
+        inputs.update({"n": n, "p": p})
+
+    elif dt == "Poisson":
+        lam = c1.number_input("Tasa promedio (λ):", 0.001, value=5.0, key="d_poi_l")
+        if tipo_calc == "Intervalo (P [a, b])":
+            a = c1.number_input("Mínimo (a):", 0, key="d_poi_a")
+            b = c2.number_input("Máximo (b):", 0, key="d_poi_b")
+            res = sum(probabilidad_poisson(i, lam) for i in range(int(a), int(b) + 1))
+            res_label = f"P({a} ≤ X ≤ {b})"
+        else:
+            k = st.number_input("Ocurrencias (k):", 0, key="d_poi_k")
+            if "Puntual" in tipo_calc: 
+                res = probabilidad_poisson(int(k), lam)
+                res_label = f"P(X = {k})"
+            elif "Inferior" in tipo_calc: 
+                res = sum(probabilidad_poisson(i, lam) for i in range(int(k) + 1))
+                res_label = f"P(X ≤ {k})"
+            else: 
+                res = 1 - sum(probabilidad_poisson(i, lam) for i in range(int(k) + 1))
+                res_label = f"P(X > {k})"
+        inputs.update({"lam": lam})
+
+    elif dt == "Exponencial":
+        lam = c1.number_input("Tasa (λ):", 0.001, value=1.0, key="d_exp_l")
+        if tipo_calc == "Intervalo (P [a, b])":
+            a = c1.number_input("Inicio (a):", 0.0, key="d_exp_a")
+            b = c2.number_input("Fin (b):", 0.0, key="d_exp_b")
+            res = math.exp(-lam * a) - math.exp(-lam * b)
+            res_label = f"P({a} ≤ X ≤ {b})"
+        else:
+            x = st.number_input("Valor (x):", 0.0, key="d_exp_x")
+            if "Puntual" in tipo_calc: 
+                res = lam * math.exp(-lam * x)
+                res_label = f"f({x}) [Densidad]"
+            elif "Inferior" in tipo_calc: 
+                res = 1 - math.exp(-lam * x)
+                res_label = f"P(X ≤ {x})"
+            else: 
+                res = math.exp(-lam * x)
+                res_label = f"P(X > {x})"
+        inputs.update({"lam": lam})
+
+    st.markdown("---")
+    
+    # --- RESULTADO ESTILIZADO ---
+    st.markdown(f"""
+        <div style="background: linear-gradient(90deg, rgba(56, 189, 248, 0.2), rgba(56, 189, 248, 0.05)); border: 1px solid rgba(56, 189, 248, 0.3); padding: 25px; border-radius: 20px; text-align: center; margin-bottom: 20px;">
+            <h4 style="margin: 0; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.9rem;">{res_label}</h4>
+            <p style="font-size: 2.5rem; font-weight: 800; margin: 10px 0; font-family: 'JetBrains Mono', monospace; color: #f8fafc;">{res:.10f}</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    if dt == "Normal":
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Valor Z", f"{( (x-mu)/sigma if 'Intervalo' not in tipo_calc else 'N/A' )}")
+        c2.metric("Varianza", f"{sigma**2:.4f}")
+        c3.metric("Desv. Est.", f"{sigma:.4f}")
+    elif dt == "Exponencial":
+        c1, c2 = st.columns(2)
+        c1.metric("Media (1/λ)", f"{1/lam:.4f}")
+        c2.metric("Mediana", f"{math.log(2)/lam:.4f}")
+    elif dt == "Binomial":
+        c1, c2 = st.columns(2)
+        c1.metric("Media (np)", f"{n*p:.4f}")
+        c2.metric("Varianza (npq)", f"{n*p*(1-p):.4f}")
+    elif dt == "Poisson":
+        c1, c2 = st.columns(2)
+        c1.metric("Media (λ)", f"{lam:.4f}")
+        c2.metric("Varianza (λ)", f"{lam:.4f}")
+    
     if st.button("📝 Registrar"): registrar_calculo("Distribución", inputs)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -337,11 +447,61 @@ elif "5." in opcion:
 elif "6." in opcion:
     render_section_header("Intervalos", "Límites de confianza.", "📏")
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    n, m, s = st.number_input("n:", 2, key="i_n"), st.number_input("x̄:", value=100.0, key="i_m"), st.number_input("s:", 0.1, value=15.0, key="i_s")
-    c = st.slider("Confianza:", 0.8, 0.99, 0.95, key="i_c")
-    err = get_z_value(c) * (s / math.sqrt(n))
-    st.metric("Intervalo", f"[{m-err:.4f}, {m+err:.4f}]")
-    if st.button("📝 Registrar"): registrar_calculo("Intervalo", {"i_n":n,"i_m":m,"i_s":s,"i_c":c})
+    
+    col_a, col_b = st.columns(2)
+    with col_a:
+        n = st.number_input("Tamaño de muestra (n):", 2, value=30, key="i_n")
+        m = st.number_input("Media muestral (x̄):", value=100.0, key="i_m")
+        c = st.slider("Nivel de Confianza:", 0.80, 0.99, 0.95, 0.01, key="i_c")
+        
+    with col_b:
+        sigma_conocida = st.radio("¿Conoce σ (poblacional)?", ["Sí, es conocida (σ)", "No, usar muestral (s)"], index=1, key="i_sigma_know")
+        label_s = "Desviación Estándar (σ):" if "Sí" in sigma_conocida else "Desviación Estándar (s):"
+        s = st.number_input(label_s, 0.01, value=15.0, key="i_s")
+
+    # --- APLICACIÓN DE CRITERIOS ---
+    es_sigma = "Sí" in sigma_conocida
+    if es_sigma:
+        v_critico = get_z_value(c)
+        dist_used = "Normal (Z)"
+        razon = "Se utiliza la distribución Z porque la desviación estándar poblacional (σ) es conocida."
+        color_box = "info"
+    else:
+        if n >= 30:
+            v_critico = get_z_value(c)
+            dist_used = "Normal (Z) [Aprox]"
+            razon = f"Se utiliza la aproximación Normal (Z) porque n={n} (n ≥ 30) a pesar de no conocer σ."
+            color_box = "success"
+        else:
+            v_critico = get_t_value(c, n - 1)
+            dist_used = f"t-Student (df={n-1})"
+            razon = f"Se utiliza la distribución t de Student porque σ es desconocida y n={n} (n < 30)."
+            color_box = "warning"
+
+    err = v_critico * (s / math.sqrt(n))
+    li, ls = m - err, m + err
+
+    st.markdown(f"""
+        <div style="background: rgba(56, 189, 248, 0.05); border-left: 5px solid #38bdf8; padding: 15px; border-radius: 0 12px 12px 0; margin: 20px 0;">
+            <strong style="color: #38bdf8; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Lógica Estadística Aplicada:</strong><br>
+            <span style="color: #cbd5e1; font-size: 1.1rem;">{razon}</span>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Valor Crítico", f"{v_critico:.4f}")
+    m2.metric("Margen de Error", f"{err:.4f}")
+    m3.metric("Error Estándar", f"{(s/math.sqrt(n)):.4f}")
+    
+    st.markdown(f"""
+        <div style="background: linear-gradient(90deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.05)); border: 1px solid rgba(34, 197, 94, 0.3); padding: 20px; border-radius: 16px; text-align: center; margin-top: 20px;">
+            <h3 style="margin: 0; color: #4ade80;">Intervalo de Confianza</h3>
+            <p style="font-size: 1.8rem; font-weight: 800; margin: 10px 0; font-family: 'JetBrains Mono', monospace; color: #f8fafc;">[{li:.4f}, {ls:.4f}]</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("📝 Registrar"): 
+        registrar_calculo("Intervalo", {"i_n":n,"i_m":m,"i_s":s,"i_c":c, "i_sigma_know":sigma_conocida})
     st.markdown('</div>', unsafe_allow_html=True)
 
 # =======================================================
