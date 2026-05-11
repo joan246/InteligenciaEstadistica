@@ -89,7 +89,7 @@ def registrar_calculo(modulo, inputs_dict):
 # CONFIGURACIÓN GENERAL & UI
 # ==========================
 st.set_page_config(
-    page_title="Sistema de Resolución Estadística (Académica)", 
+    page_title="Sistema de Resolución Estadístico (Académica)", 
     page_icon="🧬", 
     layout="wide", 
     initial_sidebar_state="expanded"
