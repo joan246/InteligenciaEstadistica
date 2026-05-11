@@ -193,7 +193,7 @@ with st.sidebar:
 # 🏠 PANEL DE CONTROL
 # =======================================================
 if "Panel" in opcion:
-    st.markdown('<h1 class="hero-title">Sistema de Resolución Estadística</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">Sistema de Resolución Estadístico</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color: #64748b; margin-bottom: 30px;">Plataforma de alta fidelidad para el análisis y modelado de datos académicos.</p>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
