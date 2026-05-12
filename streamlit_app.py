@@ -1286,7 +1286,8 @@ elif categoria == "Indicadores Estadísticos":
         st.subheader("🖼️ Visualización Gráfica")
         st.info("A continuación se presentan tres tipos de gráficos para que elijas el que mejor se adapte a tu informe.")
         
-        g1, g2, g3 = st.columns(3)
+        g1, g2 = st.columns(2)
+        g3, g4 = st.columns(2)
         
         # Histograma
         with g1:
@@ -1314,6 +1315,16 @@ elif categoria == "Indicadores Estadísticos":
             ax_pie.pie(values, labels=[str(l) for l in labels], autopct='%1.1f%%', startangle=90)
             ax_pie.set_title(f"Composición de {nombre_var}")
             st.pyplot(fig_pie)
+
+        # Diagrama de Cajas (Box Plot)
+        with g4:
+            st.markdown("#### Diagrama de Cajas")
+            fig_box, ax_box = plt.subplots()
+            ax_box.boxplot(datos, vert=False, patch_artist=True, 
+                           boxprops=dict(facecolor='#10b981', color='#059669'),
+                           medianprops=dict(color='white'))
+            ax_box.set_title(f"Box Plot de {nombre_var}")
+            st.pyplot(fig_box)
 
         # 4. CONCLUSIÓN INTEGRAL
         st.markdown("---")
@@ -1420,42 +1431,49 @@ elif categoria == "Variable Aleatoria":
             default_p = 1.0 / nv
         vp.append(c2.number_input(f"Probabilidad P(x_{i+1})", 0.0, 1.0, default_p, format="%.4f", key=f"va_p_{i}"))
 
-    ex = sum(x * p for x, p in zip(vx, vp))
-    ex2 = sum((x**2) * p for x, p in zip(vx, vp))
-    var_x = max(0.0, ex2 - ex**2)
-    sigma_x = math.sqrt(var_x)
+    suma_p = sum(vp)
+    if suma_p > 1.0001:
+        st.error(f"⚠️ La suma de las probabilidades es {suma_p:.4f}, lo cual excede 1.0. Por favor ajuste los valores.")
+    else:
+        if abs(suma_p - 1.0) > 1e-4:
+            st.warning(f"La suma de las probabilidades es {suma_p:.4f}. Para una distribución válida, la suma debería ser exactamente 1.0.")
 
-    indices = list(range(1, nv + 1))
-    ei = sum(i * p for i, p in zip(indices, vp))
-    ei2 = sum((i**2) * p for i, p in zip(indices, vp))
-    var_i = max(0.0, ei2 - ei**2)
-    sigma_i = math.sqrt(var_i)
+        ex = sum(x * p for x, p in zip(vx, vp))
+        ex2 = sum((x**2) * p for x, p in zip(vx, vp))
+        var_x = max(0.0, ex2 - ex**2)
+        sigma_x = math.sqrt(var_x)
 
-    df_data = {
-        "i": indices,
-        "x": vx,
-        "P(x)": vp,
-        "x·P(x)": [x * p for x, p in zip(vx, vp)],
-        "i·P(x)": [i * p for i, p in zip(indices, vp)],
-        "x²·P(x)": [(x**2) * p for x, p in zip(vx, vp)],
-        "i²·P(x)": [(i**2) * p for i, p in zip(indices, vp)]
-    }
-    st.dataframe(pd.DataFrame(df_data))
+        indices = list(range(1, nv + 1))
+        ei = sum(i * p for i, p in zip(indices, vp))
+        ei2 = sum((i**2) * p for i, p in zip(indices, vp))
+        var_i = max(0.0, ei2 - ei**2)
+        sigma_i = math.sqrt(var_i)
 
-    c1, c2 = st.columns(2)
-    with c1:
-        st.metric("Esperanza E(X)", f"{ex:.6f}")
-        st.metric("Varianza Var(X)", f"{var_x:.6f}")
-        st.metric("Desv. Estándar σ", f"{sigma_x:.6f}")
-    with c2:
-        st.metric("Esperanza E(i)", f"{ei:.6f}")
-        st.metric("Varianza Var(i)", f"{var_i:.6f}")
-        st.metric("Desv. Estándar σ(i)", f"{sigma_i:.6f}")
+        df_data = {
+            "i": indices,
+            "x": vx,
+            "P(x)": vp,
+            "x·P(x)": [x * p for x, p in zip(vx, vp)],
+            "i·P(x)": [i * p for i, p in zip(indices, vp)],
+            "x²·P(x)": [(x**2) * p for x, p in zip(vx, vp)],
+            "i²·P(x)": [(i**2) * p for i, p in zip(indices, vp)]
+        }
+        st.dataframe(pd.DataFrame(df_data))
 
-    if st.button("Generar reporte de Variable Aleatoria"):
-        reporte = (f"Para la variable aleatoria definida, el valor esperado o promedio a largo plazo (E(X)) es {ex:.4f}. "
-                  f"La desviación estándar es {sigma_x:.4f}, lo que indica el grado de dispersión de los valores respecto a su media.")
-        show_report(reporte)
+        c1, c2 = st.columns(2)
+        with c1:
+            st.metric("Esperanza E(X)", f"{ex:.6f}")
+            st.metric("Varianza Var(X)", f"{var_x:.6f}")
+            st.metric("Desv. Estándar σ", f"{sigma_x:.6f}")
+        with c2:
+            st.metric("Esperanza E(i)", f"{ei:.6f}")
+            st.metric("Varianza Var(i)", f"{var_i:.6f}")
+            st.metric("Desv. Estándar σ(i)", f"{sigma_i:.6f}")
+
+        if st.button("Generar reporte de Variable Aleatoria"):
+            reporte = (f"Para la variable aleatoria definida, el valor esperado o promedio a largo plazo (E(X)) es {ex:.4f}. "
+                      f"La desviación estándar es {sigma_x:.4f}, lo que indica el grado de dispersión de los valores respecto a su media.")
+            show_report(reporte)
 
 elif categoria == "Distribuciones Probabilísticas":
     render_section_header("Distribuciones Probabilísticas", "Normal, Binomial, Poisson y Exponencial.", "📈")
