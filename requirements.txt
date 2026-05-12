@@ -1,4 +1,6 @@
-streamlit
-pandas
 numpy
-altair
+pandas
+matplotlib
+streamlit
+scipy
+openpyxl
