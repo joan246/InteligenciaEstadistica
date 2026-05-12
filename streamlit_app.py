@@ -501,7 +501,7 @@ elif categoria == "Distribuciones de muestreo":
         render_result_box("Error estándar", f"{se:.6f}")
 
         if tipo in ["P(X̄ < c)", "P(X̄ > c)"]:
-            c = parse_num(st.text_input("promedio muestral", "52", key="dm_media_c"))
+            c = parse_num(st.text_input("PROMEDIO MUESTRAL", "52", key="dm_media_c"))
             if st.button("Calcular", key="dm_media_btn_1"):
                 z = (c - mu) / se
                 p_menor = phi(z)
@@ -550,7 +550,7 @@ elif categoria == "Distribuciones de muestreo":
             st.warning("No se cumple completamente la regla n ≥ 30 y n·p ≥ 5.")
 
         if tipo in ["P(p̂ < c)", "P(p̂ > c)"]:
-            c = parse_num(st.text_input("promedio muestral", "20%", key="dm_prop_c"))
+            c = parse_num(st.text_input("PROMEDIO MUESTRAL", "20%", key="dm_prop_c"))
             if st.button("Calcular", key="dm_prop_btn_1"):
                 z = (c - p) / se
                 p_menor = phi(z)
@@ -633,7 +633,7 @@ elif categoria == "Intervalos de confianza":
             st.latex(r"IC = \bar{x} \pm " + nombre_crit + r" \cdot \frac{s}{\sqrt{n}}")
             
             c1, c2, c3 = st.columns(3)
-            c1.metric("promedio muestralrítico", f"{crit:.4f}")
+            c1.metric("PROMEDIO MUESTRALrítico", f"{crit:.4f}")
             c2.metric("Error estándar", f"{se:.4f}")
             c3.metric("Margen de error", f"{margen:.4f}")
             
@@ -722,7 +722,7 @@ elif categoria == "Pruebas de hipótesis":
             st.write(f"gl = {gl_txt}")
             st.write(f"SE = {se:.6f}")
             st.write(f"{nombre} calculado = {estad:.6f}")
-            st.write(f"promedio muestralrítico = {crit:.4f}")
+            st.write(f"PROMEDIO MUESTRALrítico = {crit:.4f}")
             st.write(f"p-valor = {p_value:.6f}")
             st.write(f"α = {alpha:.4f}")
             st.success("Decisión: Se rechaza H₀.") if rechaza else st.warning("Decisión: No se rechaza H₀.")
@@ -763,7 +763,7 @@ elif categoria == "Pruebas de hipótesis":
             st.write(f"p̂ = {phat:.6f}")
             st.write(f"SE = {se:.6f}")
             st.write(f"z calculado = {z:.6f}")
-            st.write(f"promedio muestralrítico = {crit:.4f}")
+            st.write(f"PROMEDIO MUESTRALrítico = {crit:.4f}")
             st.write(f"p-valor = {p_value:.6f}")
             st.success("Decisión: Se rechaza H₀.") if rechaza else st.warning("Decisión: No se rechaza H₀.")
             h1 = (
@@ -826,7 +826,7 @@ elif categoria == "Pruebas de hipótesis":
                 st.write(f"SE = {se:.6f}")
                 st.write(f"{nombre} calculado = {estad:.6f}")
                 st.write(f"gl = {gl_txt}")
-                st.write(f"promedio muestralrítico = {crit:.4f}")
+                st.write(f"PROMEDIO MUESTRALrítico = {crit:.4f}")
                 st.write(f"p-valor = {p_value:.6f}")
                 st.success("Decisión: Se rechaza H₀.") if rechaza else st.warning("Decisión: No se rechaza H₀.")
                 h1 = (
@@ -863,7 +863,7 @@ elif categoria == "Pruebas de hipótesis":
                     st.write(f"SE = {se:.6f}")
                     st.write(f"t calculado = {estad:.6f}")
                     st.write(f"gl = {gl}")
-                    st.write(f"promedio muestralrítico = {crit:.4f}")
+                    st.write(f"PROMEDIO MUESTRALrítico = {crit:.4f}")
                     st.write(f"p-valor = {p_value:.6f}")
                     st.success("Decisión: Se rechaza H₀.") if rechaza else st.warning("Decisión: No se rechaza H₀.")
                     h1 = (
@@ -905,7 +905,7 @@ elif categoria == "Pruebas de hipótesis":
             st.write(f"p combinada = {p_pool:.6f}")
             st.write(f"SE = {se:.6f}")
             st.write(f"z calculado = {z:.6f}")
-            st.write(f"promedio muestralrítico = {crit:.4f}")
+            st.write(f"PROMEDIO MUESTRALrítico = {crit:.4f}")
             st.write(f"p-valor = {p_value:.6f}")
             st.success("Decisión: Se rechaza H₀.") if rechaza else st.warning("Decisión: No se rechaza H₀.")
             h1 = (
